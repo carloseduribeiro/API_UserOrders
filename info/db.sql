@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS `user` (
 	phone_number VARCHAR(20) NOT NULL,
 	created_at DATETIME NOT NULL,
 	updated_at DATETIME,
-	PRIMARY KEY (id)
+	PRIMARY KEY (id),
+    CONSTRAINT UC_User UNIQUE (cpf)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS `order` (

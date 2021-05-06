@@ -13,13 +13,13 @@ def keys_to_str_sql_format(data: list, separator=", "):
 
 
 # Executes the SQL command and returns json with result:
-def exectute_sql_command(sql: str, values=None, success_msg="Done!", error_msg="") -> tuple:
+def exectute_sql_command(sql: str, values=None, success_msg="", error_msg="") -> tuple:
     default_message = "Internal error! Please contact the suport."
 
     status = 500
-    message = default_message if len(error_msg) == 0 else error_msg
     error_message = ""
-    sql_result = []
+    message = success_msg
+    result_data = []
 
     # Ensure that values are an iterable object:
     if values:
@@ -32,7 +32,6 @@ def exectute_sql_command(sql: str, values=None, success_msg="Done!", error_msg="
 
         if result > 0:
             status = 200
-            message = success_msg
 
             # Checks whether cursor contains data:
             data = cursor.fetchall()
@@ -43,22 +42,34 @@ def exectute_sql_command(sql: str, values=None, success_msg="Done!", error_msg="
                     entty = {}
                     for key, value in zip(columns, entity):
                         entty[key] = value if not type(value) == datetime else value.isoformat(sep=' ')
-                    sql_result.append(entty)
+                    result_data.append(entty)
         else:
             status = 400
-            error_message = "Unknow Error."
+            message = error_msg
 
     except MySQLdb.OperationalError as error:
         error_message = error.args[1]
+        message = default_message if len(error_msg) == 0 else error_msg
     except MySQLdb.ProgrammingError as error:
         error_message = error.args[1]
+        message = default_message if len(error_msg) == 0 else error_msg
     except MySQLdb.DataError as error:
         error_message = error.args[1]
+        message = default_message if len(error_msg) == 0 else error_msg
 
-    results = dict(status=status, message=message)
+    json_result = dict(status=status)
+    if len(message) > 0:
+        json_result['message'] = message
     if len(error_message) > 0:
-        results['error'] = error_message
-    if len(sql_result) > 0:
-        results["result"] = sql_result
+        json_result['error'] = error_message
+    if len(result_data) > 0:
+        json_result['result'] = result_data
 
-    return results, status
+    return json_result, status
+
+
+# Returns true if a id exists
+def id_exists(table: str, id_entity: int) -> bool:
+    sql = f"SELECT id FROM {table} WHERE id = %s;"
+    result = cursor.execute(sql, [id_entity])
+    return True if result > 0 else False

@@ -3,7 +3,7 @@ from json import loads
 
 from flask import Flask, request
 
-from utils import exectute_sql_command, keys_to_str_sql_format
+from utils import exectute_sql_command, keys_to_str_sql_format, id_exists
 
 app = Flask("__name__")
 
@@ -15,9 +15,14 @@ def get_all():
 
 
 @app.route("/user/<int:user_id>", methods=["GET"])
-def get(user_id=None):
+def get_by_id(user_id=None):
     if not user_id:
         result = dict(status=400, message="Check the user id.", error="User id was not provided!")
+        return result, 400
+
+    # Checks if the ID exists:
+    if not id_exists("user", user_id):
+        result = dict(status=400, message="Check the user information.", error="User id not exists!")
         return result, 400
 
     sql = "SELECT * FROM user WHERE id = %s;"
@@ -68,6 +73,11 @@ def update():
         result = dict(status=400, message="Check the user information.", error="Invalid body request!")
         return result, 400
 
+    # Checks if the ID exists:
+    if not id_exists("user", body_request["id"]):
+        result = dict(status=400, message="Check the user information.", error="User id not exists!")
+        return result, 400
+
     # Gets the columns and mount the SQL update command and value list:
     received.pop(received.index('id'))
     values = [body_request[key] for key in received]
@@ -75,13 +85,18 @@ def update():
     values.append(body_request["id"])
     sql = f"UPDATE user SET {keys_to_str_sql_format(received)}, updated_at = %s WHERE id = %s;"
 
-    return exectute_sql_command(sql, values, success_msg="User updated!", error_msg="User not saved!")
+    return exectute_sql_command(sql, values, success_msg="User saved!", error_msg="User id not found!")
 
 
 @app.route("/user/<int:user_id>", methods=["DELETE"])
 def delete(user_id=None):
     if not user_id:
         result = dict(status=400, message="Check the user id.", error="User id was not provided!")
+        return result, 400
+
+    # Checks if the ID exists:
+    if not id_exists("user", user_id):
+        result = dict(status=400, message="Check the user information.", error="User id not exists!")
         return result, 400
 
     sql = "DELETE FROM user WHERE id = %s"

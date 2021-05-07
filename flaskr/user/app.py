@@ -10,7 +10,7 @@ app = Flask("__name__")
 
 @app.route("/users", methods=["GET"])
 def get_all():
-    sql = "SELECT * FROM user;"
+    sql = "SELECT * FROM users;"
     return exectute_sql_command(sql)
 
 
@@ -25,7 +25,7 @@ def get_by_id(user_id=None):
         result = dict(status=400, message="Check the user information.", error="User id not exists!")
         return result, 400
 
-    sql = "SELECT * FROM user WHERE id = %s;"
+    sql = "SELECT * FROM users WHERE id = %s;"
 
     return exectute_sql_command(sql, user_id, error_msg="User id not found!")
 
@@ -74,7 +74,7 @@ def update():
         return result, 400
 
     # Checks if the ID exists:
-    if not id_exists("user", body_request["id"]):
+    if not id_exists("users", body_request["id"]):
         result = dict(status=400, message="Check the user information.", error="User id not exists!")
         return result, 400
 
@@ -83,7 +83,7 @@ def update():
     values = [body_request[key] for key in received]
     values.append(datetime.now().isoformat(sep=' ', timespec='seconds'))
     values.append(body_request["id"])
-    sql = f"UPDATE user SET {keys_to_str_sql_format(received)}, updated_at = %s WHERE id = %s;"
+    sql = f"UPDATE users SET {keys_to_str_sql_format(received)}, updated_at = %s WHERE id = %s;"
 
     return exectute_sql_command(sql, values, success_msg="User saved!", error_msg="User id not found!")
 
@@ -95,11 +95,11 @@ def delete(user_id=None):
         return result, 400
 
     # Checks if the ID exists:
-    if not id_exists("user", user_id):
+    if not id_exists("users", user_id):
         result = dict(status=400, message="Check the user information.", error="User id not exists!")
         return result, 400
 
-    sql = "DELETE FROM user WHERE id = %s"
+    sql = "DELETE FROM users WHERE id = %s"
 
     return exectute_sql_command(sql, user_id, success_msg="User deleted!", error_msg="User not deleted!")
 

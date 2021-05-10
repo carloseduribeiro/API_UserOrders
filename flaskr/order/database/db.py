@@ -14,14 +14,14 @@ except MySQLdb.OperationalError as error:
 
 
 # Returns a dict with order information or None whether operation not performed:
-def order_insert(data: dict) -> dict:
+def insert(data: dict) -> dict:
     columns = [col for col in data.keys()]
     columns.append("created_at")
     columns.append("total_price")
     values = [val for val in data.values()]
     created_at = datetime.now().isoformat(sep=' ', timespec='seconds')
     values.append(created_at)
-    total_price = data["item_price"] * data["item_quantity"]
+    total_price = round(data["item_price"] * data["item_quantity"], 2)
     values.append(total_price)
 
     sql = f"INSERT INTO orders (id, {', '.join(columns)}) VALUES (default{', %s' * len(columns)});"
@@ -49,7 +49,7 @@ def order_insert(data: dict) -> dict:
 
 
 # Returns a dict with order information or None whether operation not performed:
-def order_update(data: dict, id_order: int) -> dict:
+def update(data: dict, id_order: int) -> dict:
     columns = [f"{col} = %s" for col in data.keys()]
     values = [val for val in data.values()]
 
@@ -57,7 +57,7 @@ def order_update(data: dict, id_order: int) -> dict:
     if "item_price" in data.keys() or "item_quantity" in data.keys():
         columns.append("total_price = %s")
 
-        order_info_db = order_get_by_id(id_order, "item_price", "item_quantity")
+        order_info_db = get_by_id(id_order, "item_price", "item_quantity")
 
         item_price = order_info_db["item_price"]
         item_quantity = order_info_db["item_quantity"]
@@ -85,7 +85,7 @@ def order_update(data: dict, id_order: int) -> dict:
 
         # Mount a dict to return:
         if cursor.rowcount == 1:
-            result_data = order_get_by_id(id_order)
+            result_data = get_by_id(id_order)
 
     except MySQLdb.OperationalError as e:
         print(e.args[1])
@@ -98,7 +98,7 @@ def order_update(data: dict, id_order: int) -> dict:
 
 
 # Returns False whether operation not performed:
-def order_delete(id_order: int) -> bool:
+def delete(id_order: int) -> bool:
     sql = "DELETE FROM orders WHERE id = %s;"
 
     try:
@@ -117,7 +117,7 @@ def order_delete(id_order: int) -> bool:
 
 
 # Returns a dict with order information or None whether operation not performed:
-def order_get_by_id(id_order: int, *columns) -> dict:
+def get_by_id(id_order: int, *columns) -> dict:
     result_data = None
 
     if len(columns) > 0:
@@ -158,10 +158,9 @@ def order_get_by_id(id_order: int, *columns) -> dict:
 
 
 # Returns a list with orders by a user by id:
-def order_get_by_user_id(id_user: int) -> list:
-    result_data = None
-
+def get_by_user_id(id_user: int) -> dict:
     sql = f"SELECT orders.* FROM users INNER JOIN orders ON orders.id_user = users.id WHERE orders.id_user = %s;"
+    orders = []
 
     try:
         cursor.execute(sql, [id_user])
@@ -170,7 +169,6 @@ def order_get_by_user_id(id_user: int) -> list:
         if cursor.rowcount > 0:
             # Gets result of the SQL command:
             columns = [i[0] for i in cursor.description]
-            result_data = []
             for entity in cursor.fetchall():
                 entty = {}
                 for key, value in zip(columns, entity):
@@ -180,8 +178,9 @@ def order_get_by_user_id(id_user: int) -> list:
                         val = float(value)
                     else:
                         val = value
-                    entty[key] = val
-                result_data.append(entty)
+                    if key != 'id_user':
+                        entty[key] = val
+                orders.append(entty)
     except MySQLdb.OperationalError as e:
         print(e.args[1])
     except MySQLdb.ProgrammingError as e:
@@ -189,11 +188,12 @@ def order_get_by_user_id(id_user: int) -> list:
     except MySQLdb.DataError as e:
         print(e.args[1])
 
+    result_data = dict(id_user=id_user, orders=orders)
     return result_data
 
 
 # Returns a list with all orders or None whether operation not performed:
-def order_get_all() -> list:
+def get_all() -> list:
     sql = "SELECT * FROM orders;"
 
     result_data = None

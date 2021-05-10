@@ -14,7 +14,7 @@ except MySQLdb.OperationalError as error:
 
 
 # Returns a dict with user information or None whether operation not performed:
-def user_insert(data: dict) -> dict:
+def insert(data: dict) -> dict:
     columns = [col for col in data.keys()]
     columns.append("created_at")
     values = [val for val in data.values()]
@@ -45,7 +45,7 @@ def user_insert(data: dict) -> dict:
 
 
 # Returns a dict with user information or None whether operation not performed:
-def user_update(data: dict, id_user: int) -> dict:
+def update(data: dict, id_user: int) -> dict:
     columns = [f"{col} = %s" for col in data.keys()]
     columns.append("updated_at = %s")
     values = [val for val in data.values()]
@@ -62,7 +62,7 @@ def user_update(data: dict, id_user: int) -> dict:
 
         # Mount a dict to return:
         if cursor.rowcount == 1:
-            result_data = user_get_by_id(id_user)
+            result_data = get_by_id(id_user)
     except MySQLdb.OperationalError as e:
         print(e.args[1])
     except MySQLdb.ProgrammingError as e:
@@ -74,7 +74,7 @@ def user_update(data: dict, id_user: int) -> dict:
 
 
 # Returns False whether operation not performed:
-def user_delete(id_user: int) -> bool:
+def delete(id_user: int) -> bool:
     sql = "DELETE FROM users WHERE id = %s;"
 
     try:
@@ -93,7 +93,7 @@ def user_delete(id_user: int) -> bool:
 
 
 # Returns a dict with user information or None whether operation not performed:
-def user_get_by_id(id_user: int) -> dict:
+def get_by_id(id_user: int) -> dict:
     sql = "SELECT * FROM users WHERE id = %s"
     result_data = None
 
@@ -126,7 +126,7 @@ def user_get_by_id(id_user: int) -> dict:
 
 
 # Returns a list with all users or None whether operation not performed:
-def user_get_all() -> list:
+def get_all() -> list:
     sql = "SELECT * FROM users;"
 
     result_data = None

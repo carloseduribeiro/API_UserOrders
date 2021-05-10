@@ -1,36 +1,45 @@
-from datetime import datetime
-from json import loads
+from json import loads, dumps
 
 from flask import Flask, request
 
-from utils import exectute_sql_command, keys_to_str_sql_format, id_exists
+from database import db
+from utils import id_exists
 
 app = Flask("__name__")
 
 
 @app.route("/users", methods=["GET"])
 def get_all():
-    sql = "SELECT * FROM users;"
-    return exectute_sql_command(sql)
+    response_data = db.user_get_all()
+
+    if response_data:
+        return dumps(response_data), 200
+    else:
+        response = dict(status=500, error="Internal server error.", message="Please contact the suport.")
+        return response, 500
 
 
-@app.route("/user/<int:user_id>", methods=["GET"])
+@app.route("/users/<int:user_id>", methods=["GET"])
 def get_by_id(user_id=None):
     if not user_id:
-        result = dict(status=400, message="Check the user id.", error="User id was not provided!")
-        return result, 400
+        response = dict(status=400, error="User id was not provided!", message="Check the user id.")
+        return response, 400
 
     # Checks if the ID exists:
-    if not id_exists("user", user_id):
-        result = dict(status=400, message="Check the user information.", error="User id not exists!")
-        return result, 400
+    if not id_exists("users", user_id):
+        response = dict(status=400, error="User id not exists!", message="Check the user information.")
+        return response, 400
 
-    sql = "SELECT * FROM users WHERE id = %s;"
+    response_data = db.user_get_by_id(user_id)
 
-    return exectute_sql_command(sql, user_id, error_msg="User id not found!")
+    if response_data:
+        return dumps(response_data), 200
+    else:
+        response = dict(status=500, error="Internal server error.", message="Please contact the suport.")
+        return response, 500
 
 
-@app.route("/user", methods=["POST"])
+@app.route("/users", methods=["POST"])
 def save():
     # Gets the body request:
     body_request = loads(request.data.decode('utf-8'))
@@ -41,18 +50,19 @@ def save():
     expected.sort()
     received.sort()
     if expected != received:
-        result = dict(status=400, message="Enter all the user information.", error="Invalid body request!")
-        return result, 400
+        response = dict(status=400, error="Invalid body request!", message="Enter all the user information.")
+        return response, 400
 
-    # Mount the SQL command and values list:
-    sql = f"INSERT INTO user ({', '.join(expected)}, created_at) VALUES (%s, %s, %s, %s, %s);"
-    values = list(body_request[x] for x in expected)
-    values.append(datetime.now().isoformat(sep=' ', timespec='seconds'))
+    response_data = db.user_insert(body_request)
 
-    return exectute_sql_command(sql, error_msg="User not saved!")
+    if response_data:
+        return dumps(response_data), 200
+    else:
+        response = dict(status=500, error="Internal server error.", message="Please contact the suport.")
+        return response, 500
 
 
-@app.route("/user", methods=["PUT"])
+@app.route("/users", methods=["PUT"])
 def update():
     # Gets the body request:
     body_request = loads(request.data.decode('utf-8'))
@@ -62,8 +72,13 @@ def update():
 
     # Ckecks whether user id was provided:
     if 'id' not in received:
-        result = dict(status=400, message="Check the user id.", error="User id was not provided!")
-        return result, 400
+        response = dict(status=400, error="User id was not provided!", message="Check the user id.")
+        return response, 400
+
+    # Checks if the ID exists:
+    if not id_exists("users", body_request["id"]):
+        response = dict(status=400, error="User id not exists!", message="Check the user information.")
+        return response, 400
 
     # Checks whether body request is valid:
     expect = ["id", "name", "email", "phone_number"]
@@ -73,35 +88,38 @@ def update():
         result = dict(status=400, message="Check the user information.", error="Invalid body request!")
         return result, 400
 
-    # Checks if the ID exists:
-    if not id_exists("users", body_request["id"]):
-        result = dict(status=400, message="Check the user information.", error="User id not exists!")
-        return result, 400
+    received_data = body_request.copy()
+    id_user = received_data["id"]
+    received_data.pop("id")
 
-    # Gets the columns and mount the SQL update command and value list:
-    received.pop(received.index('id'))
-    values = [body_request[key] for key in received]
-    values.append(datetime.now().isoformat(sep=' ', timespec='seconds'))
-    values.append(body_request["id"])
-    sql = f"UPDATE users SET {keys_to_str_sql_format(received)}, updated_at = %s WHERE id = %s;"
+    response_data = db.user_update(received_data, id_user)
 
-    return exectute_sql_command(sql, values, success_msg="User saved!", error_msg="User id not found!")
+    if response_data:
+        return dumps(response_data), 200
+    else:
+        response = dict(status=500, error="Internal server error.", message="Please contact the suport.")
+        return response, 500
 
 
-@app.route("/user/<int:user_id>", methods=["DELETE"])
+@app.route("/users/<int:user_id>", methods=["DELETE"])
 def delete(user_id=None):
     if not user_id:
-        result = dict(status=400, message="Check the user id.", error="User id was not provided!")
-        return result, 400
+        response = dict(status=400, error="User id was not provided!", message="Check the user id.")
+        return response, 400
 
     # Checks if the ID exists:
     if not id_exists("users", user_id):
-        result = dict(status=400, message="Check the user information.", error="User id not exists!")
-        return result, 400
+        response = dict(status=400, error="User id not exists!", message="Check the user information.")
+        return response, 400
 
-    sql = "DELETE FROM users WHERE id = %s"
+    response_data = db.user_delete(user_id)
 
-    return exectute_sql_command(sql, user_id, success_msg="User deleted!", error_msg="User not deleted!")
+    if response_data:
+        response = dict(status=200, message="User has been deleted.")
+        return response, 200
+    else:
+        response = dict(status=500, error="Internal server error.", message="Please contact the suport.")
+        return response, 500
 
 
 if __name__ == "__main__":

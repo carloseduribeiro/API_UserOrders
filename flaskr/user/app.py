@@ -10,7 +10,7 @@ app = Flask("__name__")
 
 @app.route("/users", methods=["GET"])
 def get_all():
-    response_data = db.user_get_all()
+    response_data = db.get_all()
 
     if response_data:
         return dumps(response_data), 200
@@ -30,7 +30,7 @@ def get_by_id(user_id=None):
         response = dict(status=400, error="User id not exists!", message="Check the user information.")
         return response, 400
 
-    response_data = db.user_get_by_id(user_id)
+    response_data = db.get_by_id(user_id)
 
     if response_data:
         return dumps(response_data), 200
@@ -53,7 +53,7 @@ def save():
         response = dict(status=400, error="Invalid body request!", message="Enter all the user information.")
         return response, 400
 
-    response_data = db.user_insert(body_request)
+    response_data = db.insert(body_request)
 
     if response_data:
         return dumps(response_data), 200
@@ -92,7 +92,7 @@ def update():
     id_user = received_data["id"]
     received_data.pop("id")
 
-    response_data = db.user_update(received_data, id_user)
+    response_data = db.update(received_data, id_user)
 
     if response_data:
         return dumps(response_data), 200
@@ -112,7 +112,7 @@ def delete(user_id=None):
         response = dict(status=400, error="User id not exists!", message="Check the user information.")
         return response, 400
 
-    response_data = db.user_delete(user_id)
+    response_data = db.delete(user_id)
 
     if response_data:
         response = dict(status=200, message="User has been deleted.")

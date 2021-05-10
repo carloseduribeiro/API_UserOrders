@@ -11,7 +11,7 @@ app = Flask("__name__")
 
 @app.route("/orders", methods=["GET"])
 def get_all():
-    response_data = db.order_get_all()
+    response_data = db.get_all()
 
     if response_data:
         return dumps(response_data), 200
@@ -31,7 +31,7 @@ def get_by_user_id(user_id=None):
         response = dict(status=400, error="User id not exists!", message="Check the user information.")
         return response, 400
 
-    response_data = db.order_get_by_user_id(user_id)
+    response_data = db.get_by_user_id(user_id)
 
     if response_data:
         return dumps(response_data), 200
@@ -51,7 +51,7 @@ def get_by_id(order_id):
         response = dict(status=400, error="Order id not exists!", message="Check the order information.")
         return response, 400
 
-    response_data = db.order_get_by_id(order_id)
+    response_data = db.get_by_id(order_id)
 
     if response_data:
         return dumps(response_data), 200
@@ -103,7 +103,7 @@ def save():
         item_quantity=item_quantity,
         item_price=item_price)
 
-    response_data = db.order_insert(order_data)
+    response_data = db.insert(order_data)
 
     if response_data:
         return dumps(response_data), 200
@@ -125,7 +125,7 @@ def update():
         return result, 400
 
     try:
-        order_id = int(body_request["id"])
+        int(body_request["id"])
         # Checks if the ID exists:
         if not id_exists("orders", body_request["id"]):
             raise ValueError("Order id not exists!")
@@ -154,7 +154,7 @@ def update():
     id_order = received_data["id"]
     received_data.pop("id")
 
-    response_data = db.order_update(received_data, id_order)
+    response_data = db.update(received_data, id_order)
 
     if response_data:
         return dumps(response_data), 200
@@ -174,7 +174,7 @@ def delete(id_order: int):
         response = dict(status=400, error="Order id not exists!", message="Check the Order information.")
         return response, 400
 
-    result = db.order_delete(id_order)
+    result = db.delete(id_order)
 
     if result:
         response = dict(status=200, message="User has been deleted.")
